@@ -1,7 +1,7 @@
 /**
  * Created by Kike on 3/17/15.
  */
-function GeoWeb(){
+function GeoWeb(h, w){
     var GeoWebProto = Object.create(HTMLDivElement.prototype);
     Object.defineProperties(GeoWebProto,{
         "geoConfig":{
@@ -42,19 +42,22 @@ function GeoWeb(){
         this.style.position='absolute';
         var shadow = this.createShadowRoot();
         var pdiv = document.createElement('div');
-        pdiv.style.width='600px';
-        pdiv.style.height='600px';
+        var mapIMG = document.createElement("img");
+        w === undefined ? mapIMG.style.width='600px' : mapIMG.style.width = w + "px";
+        h === undefined ? mapIMG.style.height='600px': mapIMG.style.height = h + "px";
+        w === undefined ? GeoWebProto.size.width=600 : GeoWebProto.size.width = w;
+        h === undefined ? GeoWebProto.size.height=600: GeoWebProto.size.height = h;
         pdiv.style.border='groove';
         pdiv.tabIndex=1;
         pdiv.onfocus = function(){this.style.borderColor='red'};
         pdiv.onblur = function(){this.style.borderColor='steelblue'};
-        this.size.width=600;
-        this.size.height=600;
         pdiv.style.borderWidth='4px';
         pdiv.style.borderColor='steelblue';
         pdiv.style.borderRadius='10px';
         pdiv.addEventListener('dblclick',scrollMap,false);
         pdiv.addEventListener('keydown',scrollMap,false);
+        pdiv.addEventListener("wheel", scrollMap, false);
+        pdiv.appendChild(mapIMG);
         shadow.appendChild(pdiv);
         var findbutton = document.createElement('button');
         findbutton.tabIndex=2;
@@ -87,8 +90,9 @@ function GeoWeb(){
              url = "http://maps.google.com/maps/api/staticmap?center=&markers=size:"+GeoWebProto.marker.style.size+"|color:"+GeoWebProto.marker.style.color+"|label:"+GeoWebProto.marker.style.label+"|";
             for(var i = 0; i<GeoWebProto.marker.locations.length;i++)
                 url+= GeoWebProto.marker.locations[i].latitude+","+GeoWebProto.marker.locations[i].longitude;
-            url += "&size="+GeoWebProto.size.width+"x"+GeoWebProto.size.height+"&zoom="+GeoWebProto.zoom+"&sensor=false";
+            url += "&size="+GeoWebProto.size.width+"x"+GeoWebProto.size.height+"&zoom="+GeoWebProto.zoom+"&maptype="+ GeoWebProto.maptype + "&sensor=false";
         }
+        console.log(GeoWebProto.maptype);
         console.log(GeoWebProto.zoom);
         GeoWebProto.setMap(encodeURI(url));
     };
@@ -102,20 +106,13 @@ function GeoWeb(){
             alert("geo location, NOT SUPPORTED");
     }
     function scrollMap(e){
-        console.log(e);
-        if(e.type=='dblclick' || e.keyCode==38)
-            GeoWebProto.zoomVal(2);
-        else if (e.keyCode==40)
-            GeoWebProto.zoomVal(-2);
+        var evt=window.event || e;
+        var delta = evt.detail ? evt.detail * (-120) : evt.wheelDelta;
+        (delta<=-120)? GeoWebProto.zoomVal(-2) : GeoWebProto.zoomVal(2);
 
     }
     GeoWebProto.setMapType = function(map){
-        this.maptype=map;
-    };
-
-    GeoWebProto.setSize = function(w,h){
-        this.size.width = w;
-        this.size.height = h;
+        GeoWebProto.maptype=map;
     };
 
     GeoWebProto.zoomVal = function(z){
@@ -126,12 +123,9 @@ function GeoWeb(){
     };
     GeoWebProto.setMap = function(url){
         console.log(url);
-        document.getElementsByTagName('x-geoweb')[0].shadowRoot.querySelector('div').style.backgroundImage='url('+url+')';
+        document.getElementsByTagName('x-geoweb')[0].shadowRoot.querySelector('img').src = url;
     };
 
-    GeoWebProto.newMarker = function(size,color,label,longitude,latitude){
-
-    };
     var GeoWeb = document.registerElement('x-geoweb',{prototype : GeoWebProto});
     return new GeoWeb();
 
