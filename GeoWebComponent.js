@@ -14,7 +14,7 @@ function GeoWeb(h, w){
         },
         "marker":{
             "value":{
-                "style":{"size":"mid","color":"blue","label":"test"},
+                "style":{"size":"mid","color":"blue","label":"T"},
                 "locations":[]
             },
             "writable":true
@@ -35,6 +35,10 @@ function GeoWeb(h, w){
             "get": function(){
                 return this.shadowRoot.getElementsByTagName('div')[0];
             }
+        },
+        "position":{
+            "value":{coords:{longitude:0,latitude:0}},
+            "writable":true
         }
     });
 
@@ -84,12 +88,14 @@ function GeoWeb(h, w){
     };
 
     function Positionate(position){
-        GeoWebProto.marker.locations[0]={"longitude": position.coords.longitude, "latitude" : position.coords.latitude};
+       if(GeoWebProto.marker.locations[0]===undefined) GeoWebProto.marker.locations[0]={"longitude": position.coords.longitude, "latitude" : position.coords.latitude};
+        GeoWebProto.position.coords.longitude = position.coords.longitude;
+        GeoWebProto.position.coords.latitude = position.coords.latitude;
         var url;
         if(GeoWebProto.marker.locations.length>0) {
-             url = "http://maps.google.com/maps/api/staticmap?center=&markers=size:"+GeoWebProto.marker.style.size+"|color:"+GeoWebProto.marker.style.color+"|label:"+GeoWebProto.marker.style.label+"|";
+             url = "http://maps.google.com/maps/api/staticmap?center="+GeoWebProto.position.coords.latitude+","+GeoWebProto.position.coords.longitude;
             for(var i = 0; i<GeoWebProto.marker.locations.length;i++)
-                url+= GeoWebProto.marker.locations[i].latitude+","+GeoWebProto.marker.locations[i].longitude;
+                url+= "&markers=size:"+GeoWebProto.marker.style.size+"|color:"+GeoWebProto.marker.style.color+"|label:"+GeoWebProto.marker.style.label+"|"+GeoWebProto.marker.locations[i].latitude+","+GeoWebProto.marker.locations[i].longitude;
             url += "&size="+GeoWebProto.size.width+"x"+GeoWebProto.size.height+"&zoom="+GeoWebProto.zoom+"&maptype="+ GeoWebProto.maptype + "&sensor=false";
         }
         console.log(GeoWebProto.maptype);
@@ -107,9 +113,34 @@ function GeoWeb(h, w){
     }
     function scrollMap(e){
         var evt=window.event || e;
-        var delta = evt.detail ? evt.detail * (-120) : evt.wheelDelta;
-        (delta<=-120)? GeoWebProto.zoomVal(-2) : GeoWebProto.zoomVal(2);
-
+        if(evt.type == 'wheel') {
+            var delta = evt.detail ? evt.detail * (-120) : evt.wheelDelta;
+            (delta <= -120) ? GeoWebProto.zoomVal(-1) : GeoWebProto.zoomVal(1);
+        }else if(evt.type == 'dblclick'){
+            GeoWebProto.zoomVal(1);
+        }else if(evt.type == 'keydown'){
+            switch(e.keyCode){
+                case 32:
+                    GeoWebProto.zoomVal(1);
+                    break;
+                case 38:
+                    GeoWebProto.position.coords.latitude+=0.003;
+                    Positionate(GeoWebProto.position);
+                    break;
+                case 40:
+                    GeoWebProto.position.coords.latitude-=0.003;
+                    Positionate(GeoWebProto.position);
+                    break;
+                case 37:
+                    GeoWebProto.position.coords.longitude-=.003;
+                    Positionate(GeoWebProto.position);
+                    break;
+                case 39:
+                    GeoWebProto.position.coords.longitude+=.003;
+                    Positionate(GeoWebProto.position);
+                    break;
+            }
+        }
     }
     GeoWebProto.setMapType = function(map){
         GeoWebProto.maptype=map;
